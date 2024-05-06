@@ -250,28 +250,12 @@ function treetypeTallOak(player, log, leaves, placeholder, quality) {
 
 // algorithm to generate a tree of type pine. return a 3D array with the tree blocks
 function treetypePine(player, log, leaves, placeholder, quality) {
-    //player.message("Generating a pine tree with log " + log + " and leaves " + leaves + " with quality " + quality);
+    player.message("Generating a pine tree with log " + log + " and leaves " + leaves + " with quality " + quality);
     //if quality under 1, set to 1
     var quality_size = quality;
     if (quality_size < 1) {
         quality_size = 1;
     }
-    //quality is a number from 0 to 1. 0 is a small tree, 1 is a big tree
-    //log is the block type for the log
-    //leaves is the block type for the leaves
-    //the tree will be a 3D array with the blocks [5][50][5]
-    /*
-    var tree = new Array(tree_size[0]);
-    for (var x = 0; x < tree_size[0]; x++) {
-        tree[x] = new Array(tree_size[1]);
-        for (var y = 0; y < tree_size[1]; y++) {
-            tree[x][y] = new Array(tree_size[2]);
-            for (var z = 0; z < tree_size[2]; z++) {
-                tree[x][y][z] = null;
-            }
-        }
-    }*/
-
     // Segmentise into layers, on a 10 basis.
     /*
         Quality of 1: 30 tall log (33 tall tree)
@@ -283,11 +267,34 @@ function treetypePine(player, log, leaves, placeholder, quality) {
     // generate an x log
     var log_array = createLogX(player, log_height, 6, 12, log, placeholder);
 
+    //update log_height to height of log_array
+    log_height = log_array[0].length;
+
     //player.message("Log height: " + log_height);
 
-    var tree_size = [log_array.length, log_array[0].length, log_array[0][0].length];
+    // Create a leaf cap: 3x3 cross, of 2 tall
+    player.message("Creating leaf cap with leaves " + leaves);
+    var cap = createX(3, leaves, player);
+    display2DArray(player, cap);
+    cap = increase_2D_to_3D(cap, 2);
+    display3DArray(player, cap);
 
-    return [log_array, tree_size];
+    var cap2 = createX(1, leaves, player);
+    display2DArray(player, cap2);
+    cap2 = increase_2D_to_3D(cap2, 2);
+
+    display3DArray(player, cap2);
+
+    //get center
+    var center = Math.floor(log_array.length / 2);
+
+    var cap = concatenate3DArrays(player, cap, cap2, 1, 2, 1);
+
+    var tree = concatenate3DArrays(player, log_array, cap, center - 1, log_height - 1, center - 1, false);
+
+    var tree_size = [tree.length, tree[0].length, tree[0][0].length];
+
+    return [tree, tree_size];
 }
 
 
@@ -350,80 +357,55 @@ function fillZone(pos1, pos2, block, chance, tree) {
     return true;
 }
 
+function createX(width, block, player) {
+    player.message("Creating X with width " + width + " and block " + block);
+    // Create a 2D array of width x width
+    var x = new Array(width);
+    for (var i = 0; i < width; i++) {
+        x[i] = new Array(width);
+        for (var j = 0; j < width; j++) {
+            x[i][j] = null;
+        }
+    }
+
+    // get the center of the width (if 3, then 1, if 5, then 2...)
+    var center = Math.floor(width / 2);
+    // for the center as x, fill z
+    for (var i = 0; i < width; i++) {
+        player.message("Placing " + block + " at " + center + ", " + i);
+        x[center][i] = block;
+        x[i][center] = block;
+    }
+    return x;
+}
+
+//subfunction to increase the height of a 2D array
+function increase_2D_to_3D(array_2D, height) {
+    
+    var array_width = array_2D.length;
+    // Create a 3D array of width x height x width
+    var x = create3DArray(array_width, height, array_width);
+
+    // for each layer, fill the X
+    for (var i = 0; i < array_width; i++) {
+        for (var j = 0; j < height; j++) {
+            for (var k = 0; k < array_width; k++) {
+                if (array_2D[i][k] != null) {
+                    x[i][j][k] = array_2D[i][k];
+                }
+            }
+        }
+    }
+
+    // return the X 
+    return x;
+}
+
 // function to cerate a X log
 function createLogX(player, height, min_layer_height, max_layer_height, log, placeholder) {
-    //player.message("Creating a log with block " + log + " of height " + height + " with min layer height " + min_layer_height + " and max layer height " + max_layer_height);
-
-    //subfunction to create an X
-    function createX(width) {
-        //player.message("Creating a X of width " + width);
-        // Create a 2D array of width x width
-        var x = new Array(width);
-        for (var i = 0; i < width; i++) {
-            x[i] = new Array(width);
-            for (var j = 0; j < width; j++) {
-                x[i][j] = null;
-            }
-        }
-
-        // get the center of the width (if 3, then 1, if 5, then 2...)
-        var center = Math.floor(width / 2);
-        // for the center as x, fill z
-        for (var i = 0; i < width; i++) {
-            x[center][i] = log;
-            x[i][center] = log;
-        }
-        // show in chat the X
-        /*for (var i = 0; i < width; i++) {
-            var line = "";
-            for (var j = 0; j < width; j++) {
-                if (x[i][j] != null) {
-                    line += "X";
-                }
-                else {
-                    line += " ";
-                }
-            }
-            //player.message(line);
-        }*/
-        // return the X
-        return x;
-    }
-
-    //subfunction to create a taller X
-    function createXTall(x_2d, height) {
-        //player.message("Creating a taller X of height " + height);
-
-        //player.message("X: " + x_2d);
-        
-        var array_width = x_2d.length;
-        // Create a 3D array of width x height x width
-        var x = create3DArray(array_width, height, array_width);
-
-        // for each layer, fill the X
-        for (var i = 0; i < array_width; i++) {
-            for (var j = 0; j < height; j++) {
-                for (var k = 0; k < array_width; k++) {
-                    if (x_2d[i][k] != null) {
-                        x[i][j][k] = log;
-                    }
-                }
-            }
-        }
-
-        //build3DArray(player, x, 2066, 76, 3716);
-
-        // return the X 
-        return x;
-    }
-
-    //player.message("Creating a log of height " + height + " with min layer height " + min_layer_height + " and max layer height " + max_layer_height);
 
     // segment the height of the log into several segments of sizes between min_layer_height and max_layer_height
     var layers = segmentNumber(height, min_layer_height, max_layer_height);
-
-
-    //player.message("Created a log with " + layers.length + " layers: " + layers);
 
     // create the ampty log
     //sum of all layers
@@ -445,8 +427,8 @@ function createLogX(player, height, min_layer_height, max_layer_height, log, pla
     var y_start = 0;
     var concat_offset = 0;
 
-    var x_2d = createX(log_width);
-    var x_3d = createXTall(x_2d, layers[0]);
+    var x_2d = createX(log_width, log, player);
+    var x_3d = increase_2D_to_3D(x_2d, layers[0], log);
     var log_array = x_3d;
     concat_offset++;
 
@@ -457,9 +439,9 @@ function createLogX(player, height, min_layer_height, max_layer_height, log, pla
             //player.message("Creating layer " + i + " with height " + layers[i] + " and width " + log_width);
 
             // create the X
-            x_2d = createX(log_width);
+            x_2d = createX(log_width, log, player);
             // create the taller X
-            x_3d = createXTall(x_2d, layers[i]);
+            x_3d = increase_2D_to_3D(x_2d, layers[i], log);
             //player.message("Created X log element, that will be placed between " + y_start + " and " + (y_start - layers[i] + 1));
             // concatenate the X to the log
             log_array = concatenate3DArrays(player, log_array, x_3d, concat_offset, y_start + layers[i] - 1, concat_offset);
@@ -559,8 +541,13 @@ array1: 3D array
 array2: 3D array
 from_bottom: boolean (if true, merge from bottom to top, if false, merge from top to bottom)
 */
-function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_z) {
+function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_z, replace_blocks) {
     //player.message("Concatenating 3D arrays with offset " + offset_x + ", " + offset_y + ", " + offset_z);
+
+    // replace_blocks is true by default
+    if (replace_blocks == null) {
+        replace_blocks = true;
+    }
 
     // get the size of the arrays
     var x1 = array1.length;
@@ -591,7 +578,9 @@ function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_
     for (var i = 0; i < x2; i++) {
         for (var j = 0; j < y2; j++) {
             for (var k = 0; k < z2; k++) {
-                merged[i + offset_x][j + offset_y][k + offset_z] = array2[i][j][k];
+                if (replace_blocks || merged[i + offset_x][j + offset_y][k + offset_z] == null) {
+                    merged[i + offset_x][j + offset_y][k + offset_z] = array2[i][j][k];
+                }
             }
         }
     }
@@ -634,4 +623,41 @@ function replaceBlock(array, block, replacement) {
         }
     }
     return array;
+}
+
+//function to display a 3D array in chat
+function display3DArray(player, array) {
+    for (var y = 0; y < array[0].length; y++) {
+        var line = "";
+        for (var x = 0; x < array.length; x++) {
+            for (var z = 0; z < array[0][0].length; z++) {
+                if (array[x][y][z] != null) {
+                    line += "o";
+                }
+                else {
+                    line += "x";
+                }
+            }
+            line += " ";
+        }
+        player.message(line);
+    }
+    player.message("______________________");
+}
+
+//function to display a 2D array in chat
+function display2DArray(player, array) {
+    for (var y = 0; y < array.length; y++) {
+        var line = "";
+        for (var x = 0; x < array.length; x++) {
+            if (array[x][y] != null) {
+                line += "o";
+            }
+            else {
+                line += "x";
+            }
+        }
+        player.message(line);
+    }
+    player.message("______________________");
 }
