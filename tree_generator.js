@@ -9,20 +9,13 @@ var quality = Math.random() * 2;
 
 // Script for scripted block that spawns a tree above it when interacted with
 function interact(event) {
-    // Get the player
     var player = event.player;
     buildTree(event, player);
-
-
-    // Return true to prevent the default action
     return true;
 }
 
-// This function checks if a block is inside a region
+// Function to check if a point is inside a box
 function isInside(player, x, y, z, x1, y1, z1, x2, y2, z2) {
-    //player.message("Checking if block is inside region");
-    //player.message("Region: " + x1 + ", " + y1 + ", " + z1 + " to " + x2 + ", " + y2 + ", " + z2);
-    
     var inside = false;
     if ((x >= x1 && x <= x2) || (x <= x1 && x >= x2)) {
         if ((y >= y1 && y <= y2) || (y <= y1 && y >= y2)) {
@@ -31,22 +24,13 @@ function isInside(player, x, y, z, x1, y1, z1, x2, y2, z2) {
             }
         }
     }
-
-    /*if (inside) {
-        player.message("Block is inside region");
-    }
-    else {
-        player.message("Block is outside region");
-    }*/
-
     return inside;
 }
 
 // Funtion to build a tree above the scripted block
 function buildTree(event, player) {
     // Get the block the player interacted with
-    var block = event.block;
-    var block_location = block.getPos();
+    var block_location = event.block.getPos();
     //block_location is type IPos
     var x = block_location.getX();
     var y = block_location.getY();
@@ -55,13 +39,11 @@ function buildTree(event, player) {
     // generate a tree
     var log = "minecraft:log";
     var leaves = "minecraft:leaves";
-    var placeholder = "minecraft:log2";
+    var placeholder = "minecraft:sponge";
     var tree = treetypePine(player, log, leaves, placeholder, quality);
 
     // build the array in the world
     build3DArray(player, tree[0], x, y + 1, z);
-
-
 
     return true;
 }
@@ -269,8 +251,6 @@ function treetypePine(player, log, leaves, placeholder, quality) {
 
     //update log_height to height of log_array
     log_height = log_array[0].length;
-
-    //player.message("Log height: " + log_height);
 
     // Create a leaf cap: 3x3 cross, of 2 tall
     player.message("Creating leaf cap with leaves " + leaves);
@@ -535,12 +515,7 @@ function create3DArray(x, y, z) {
     return array;
 }
 
-// function to merge 2 3D arrays centered
-/*
-array1: 3D array
-array2: 3D array
-from_bottom: boolean (if true, merge from bottom to top, if false, merge from top to bottom)
-*/
+// function to merge 2 3D arrays
 function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_z, replace_blocks) {
     //player.message("Concatenating 3D arrays with offset " + offset_x + ", " + offset_y + ", " + offset_z);
 
