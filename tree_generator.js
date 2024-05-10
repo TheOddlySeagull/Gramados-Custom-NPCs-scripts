@@ -9,13 +9,12 @@ var quality = Math.random() * 2;
 
 // Script for scripted block that spawns a tree above it when interacted with
 function interact(event) {
-    var player = event.player;
-    buildTree(event, player);
+    buildTree(event);
     return true;
 }
 
 // Function to check if a point is inside a box
-function isInside(player, x, y, z, x1, y1, z1, x2, y2, z2) {
+function isInside(x, y, z, x1, y1, z1, x2, y2, z2) {
     var inside = false;
     if ((x >= x1 && x <= x2) || (x <= x1 && x >= x2)) {
         if ((y >= y1 && y <= y2) || (y <= y1 && y >= y2)) {
@@ -28,9 +27,9 @@ function isInside(player, x, y, z, x1, y1, z1, x2, y2, z2) {
 }
 
 // Funtion to build a tree above the scripted block
-function buildTree(event, player) {
-    // Get the block the player interacted with
+function buildTree(event) {
     var block_location = event.block.getPos();
+    var world = event.player.getWorld();
     //block_location is type IPos
     var x = block_location.getX();
     var y = block_location.getY();
@@ -40,17 +39,17 @@ function buildTree(event, player) {
     var log = "minecraft:log";
     var leaves = "minecraft:leaves";
     var placeholder = "minecraft:sponge";
-    var tree = treetypePine(player, log, leaves, placeholder, quality);
+    var tree = treetypePine(log, leaves, placeholder, quality);
 
     // build the array in the world
-    build3DArray(player, tree[0], x, y + 1, z);
+    build3DArray(tree[0], x, y + 1, z, world);
 
     return true;
 }
 
 
 // algorithm to generate a tree of type tall oak. return a 3D array with the tree blocks
-function treetypeTallOak(player, log, leaves, placeholder, quality) {
+function treetypeTallOak(log, leaves, placeholder, quality) {
     //if quality under 1, set to 1
     var quality_size = quality;
     if (quality_size < 1) {
@@ -200,7 +199,7 @@ function treetypeTallOak(player, log, leaves, placeholder, quality) {
     // UPPER LEAVES THICK OF THE TREE //
 
     var upper_leaves_thick = getBounds(16, 17, tree_height, 20);
-    //player.message("Upper leaves thick: " + upper_leaves_thick[0] + " to " + upper_leaves_thick[1]);
+    //log("Upper leaves thick: " + upper_leaves_thick[0] + " to " + upper_leaves_thick[1]);
     for (var i = upper_leaves_thick[0]; i < upper_leaves_thick[1]; i++) {
         tree[1][i][2] = leaves;
         tree[3][i][2] = leaves;
@@ -231,8 +230,8 @@ function treetypeTallOak(player, log, leaves, placeholder, quality) {
 }
 
 // algorithm to generate a tree of type pine. return a 3D array with the tree blocks
-function treetypePine(player, log, leaves, placeholder, quality) {
-    player.message("Generating a pine tree with log " + log + " and leaves " + leaves + " with quality " + quality);
+function treetypePine(log, leaves, placeholder, quality) {
+    //log("Generating a pine tree with log " + log + " and leaves " + leaves + " with quality " + quality);
     //if quality under 1, set to 1
     var quality_size = quality;
     if (quality_size < 1) {
@@ -247,34 +246,49 @@ function treetypePine(player, log, leaves, placeholder, quality) {
     // generate log height
     var log_height = Math.floor(10 + 20 * quality);
     // generate an x log
-    var log_array = createLogX(player, log_height, 6, 12, log, placeholder);
+    var log_array = createLogX(log_height, 6, 12, log, placeholder);
 
     //update log_height to height of log_array
     log_height = log_array[0].length;
 
     // Create a leaf cap: 3x3 cross, of 2 tall
-    player.message("Creating leaf cap with leaves " + leaves);
-    var cap = createX(3, leaves, player);
-    display2DArray(player, cap);
+    //log("Creating leaf cap with leaves " + leaves);
+    var cap = createX(3, leaves);
+    //display2DArray(cap);
     cap = increase_2D_to_3D(cap, 2);
-    display3DArray(player, cap);
+    //display3DArray(cap);
 
-    var cap2 = createX(1, leaves, player);
-    display2DArray(player, cap2);
+    var cap2 = createX(1, leaves);
+    //display2DArray(cap2);
     cap2 = increase_2D_to_3D(cap2, 2);
 
-    display3DArray(player, cap2);
+    //display3DArray(cap2);
 
     //get center
     var center = Math.floor(log_array.length / 2);
 
-    var cap = concatenate3DArrays(player, cap, cap2, 1, 2, 1);
+    var cap = concatenate3DArrays(cap, cap2, 1, 2, 1);
 
-    var tree = concatenate3DArrays(player, log_array, cap, center - 1, log_height - 1, center - 1, false);
+    var tree = concatenate3DArrays(log_array, cap, center - 1, log_height - 1, center - 1, false);
 
     var tree_size = [tree.length, tree[0].length, tree[0][0].length];
 
     return [tree, tree_size];
+}
+
+
+
+
+
+
+// algorithm to generate a pine branch
+function pineBranch(log, leaves, placeholder, proportion) {
+    // the lower the proportion, the smaller the branch
+
+    // Start with an horizontal 1 to 5 blocks long log
+    var log_length = Math.floor(1 + 4 * proportion);
+    
+    
 }
 
 
@@ -337,8 +351,8 @@ function fillZone(pos1, pos2, block, chance, tree) {
     return true;
 }
 
-function createX(width, block, player) {
-    player.message("Creating X with width " + width + " and block " + block);
+function createX(width, block) {
+    //log("Creating X with width " + width + " and block " + block);
     // Create a 2D array of width x width
     var x = new Array(width);
     for (var i = 0; i < width; i++) {
@@ -352,7 +366,7 @@ function createX(width, block, player) {
     var center = Math.floor(width / 2);
     // for the center as x, fill z
     for (var i = 0; i < width; i++) {
-        player.message("Placing " + block + " at " + center + ", " + i);
+        //log("Placing " + block + " at " + center + ", " + i);
         x[center][i] = block;
         x[i][center] = block;
     }
@@ -382,7 +396,7 @@ function increase_2D_to_3D(array_2D, height) {
 }
 
 // function to cerate a X log
-function createLogX(player, height, min_layer_height, max_layer_height, log, placeholder) {
+function createLogX(height, min_layer_height, max_layer_height, log, placeholder) {
 
     // segment the height of the log into several segments of sizes between min_layer_height and max_layer_height
     var layers = segmentNumber(height, min_layer_height, max_layer_height);
@@ -407,7 +421,7 @@ function createLogX(player, height, min_layer_height, max_layer_height, log, pla
     var y_start = 0;
     var concat_offset = 0;
 
-    var x_2d = createX(log_width, log, player);
+    var x_2d = createX(log_width, log);
     var x_3d = increase_2D_to_3D(x_2d, layers[0], log);
     var log_array = x_3d;
     concat_offset++;
@@ -416,15 +430,15 @@ function createLogX(player, height, min_layer_height, max_layer_height, log, pla
         // for each layer, create a X and concatenate it to the log
         for (var i = 1; i < layers.length; i++) {
             log_width -= 2;
-            //player.message("Creating layer " + i + " with height " + layers[i] + " and width " + log_width);
+            //log("Creating layer " + i + " with height " + layers[i] + " and width " + log_width);
 
             // create the X
-            x_2d = createX(log_width, log, player);
+            x_2d = createX(log_width, log);
             // create the taller X
             x_3d = increase_2D_to_3D(x_2d, layers[i], log);
-            //player.message("Created X log element, that will be placed between " + y_start + " and " + (y_start - layers[i] + 1));
+            //log("Created X log element, that will be placed between " + y_start + " and " + (y_start - layers[i] + 1));
             // concatenate the X to the log
-            log_array = concatenate3DArrays(player, log_array, x_3d, concat_offset, y_start + layers[i] - 1, concat_offset);
+            log_array = concatenate3DArrays(log_array, x_3d, concat_offset, y_start + layers[i] - 1, concat_offset);
 
             // update the y_start and the concat_offset
             y_start += layers[i];
@@ -516,8 +530,8 @@ function create3DArray(x, y, z) {
 }
 
 // function to merge 2 3D arrays
-function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_z, replace_blocks) {
-    //player.message("Concatenating 3D arrays with offset " + offset_x + ", " + offset_y + ", " + offset_z);
+function concatenate3DArrays(array1, array2, offset_x, offset_y, offset_z, replace_blocks) {
+    //log("Concatenating 3D arrays with offset " + offset_x + ", " + offset_y + ", " + offset_z);
 
     // replace_blocks is true by default
     if (replace_blocks == null) {
@@ -564,19 +578,15 @@ function concatenate3DArrays(player, array1, array2, offset_x, offset_y, offset_
 }
 
 // function to build a 3D array in the world
-function build3DArray(player, array, build_x, build_y, build_z) {
-    // tell in chat
-    //player.message("Building 3D array in the world");
-    // get the world
-    var world = player.getWorld();
+function build3DArray(array, build_x, build_y, build_z, world) {
 
     // for each block in the 3D array, place it in the world
-    //player.message("Array size: " + array.length + ", " + array[0].length + ", " + array[0][0].length);
+    //log("Array size: " + array.length + ", " + array[0].length + ", " + array[0][0].length);
     for (var x = 0; x < array.length; x++) {
         for (var y = 0; y < array[0].length; y++) {
             for (var z = 0; z < array[0][0].length; z++) {
                 if (array[x][y][z] != null) {
-                    //player.message("Placing block " + array[x][y][z] + " at " + build_x + x + ", " + build_y + y + ", " + build_z + z);
+                    //log("Placing block " + array[x][y][z] + " at " + build_x + x + ", " + build_y + y + ", " + build_z + z);
                     world.setBlock(build_x + x, build_y + y, build_z + z, array[x][y][z], 0);
                 }
             }
@@ -601,7 +611,7 @@ function replaceBlock(array, block, replacement) {
 }
 
 //function to display a 3D array in chat
-function display3DArray(player, array) {
+function display3DArray(array) {
     for (var y = 0; y < array[0].length; y++) {
         var line = "";
         for (var x = 0; x < array.length; x++) {
@@ -615,13 +625,13 @@ function display3DArray(player, array) {
             }
             line += " ";
         }
-        player.message(line);
+        log(line);
     }
-    player.message("______________________");
+    log("______________________");
 }
 
 //function to display a 2D array in chat
-function display2DArray(player, array) {
+function display2DArray(array) {
     for (var y = 0; y < array.length; y++) {
         var line = "";
         for (var x = 0; x < array.length; x++) {
@@ -632,7 +642,7 @@ function display2DArray(player, array) {
                 line += "x";
             }
         }
-        player.message(line);
+        log(line);
     }
-    player.message("______________________");
+    log("______________________");
 }
